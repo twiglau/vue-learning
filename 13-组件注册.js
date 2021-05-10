@@ -68,6 +68,64 @@ Sub.options = mergeOptions(
 
 //在创建 vnode 的过程中,会执行 _createElement 方法,我们再来回顾下这部分逻辑
 //它的定义在  src/core/vdom/create-element.js 中:
-export function _createdElement {
-    
+export function _createdElement (
+    context:Component,
+    tag?:string | Class<Component> | Function | Object,
+    data?:VNodeData,
+    children?:any,
+    normalizationType?:number
+):VNode | Array<VNode> {
+    // ...
+    let vnode,ns
+    if(typeof tag === 'string'){
+        let Ctor
+        ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag)
+        if(config.isReservedTag(tag)){
+            //platform built-in elements
+            vnode = new VNode(
+                config.parsePlatformTagName(tag),data,children,
+                undefined,undefined,context
+            )
+        }else if(isDef(Ctor = resolveAsset(context.$options,'components',tag))){
+            // component
+            vnode = createComponent(Ctor,data,context,children,tag)
+        }else{
+            //unknown or unlisted namespaced elements
+            //check at runtime because it may get assigned a namespace when its 
+            //parent normalizes children
+            vnode = new VNode(
+                tag,data,children,
+                undefined,undefined,context
+            )
+        }
+    }else{
+        //direct component options / constructor
+        vnode = createComponent(tag,data,context,children)
+    }
+    // ...
+}
+//逻辑判断 isDef(Ctor = resolveAsset(context.$options,'components',tag)),先来看下 resolveAsset 定义:
+//在  src/core/utils/options.js 中:
+
+/**
+ * Resolve an asset.
+ * This function is used because child instances need access
+ * to assets defined in its ancestor chain.
+ */
+export function resolveAsset (
+    options:Object,
+    type:string,
+    id: string,
+    warnMissing?: boolean
+): any {
+    /** istanbul ignore if */
+    if(typeof id !== 'string'){
+        return
+    }
+    const assets = options[type]
+    //check local registration variations first
+    if(hasOwn(assets,id)) return assets[id]
+    const camelizedId = camelize(id)
+    if(hasOwn(assets,camelizedId)) return assets[camelizedId]
+    const PascalCaseId = 
 }
