@@ -127,5 +127,25 @@ export function resolveAsset (
     if(hasOwn(assets,id)) return assets[id]
     const camelizedId = camelize(id)
     if(hasOwn(assets,camelizedId)) return assets[camelizedId]
-    const PascalCaseId = 
+    const PascalCaseId = capitalize(camelizedId)
+    if(hasOwn(assets,PascalCaseId)) return assets[PascalCaseId]
+    //fallback to prototype chain
+    const res = assets[id] || assets[camelizedId] || assets[PascalCaseId]
+    if(process.env.NODE_ENV !== 'production' && warnMissing && !res){
+        warn(
+            'Failed to resolve' + type.slice(0,-1) + ': ' + id,
+            options
+        )
+    }
+    return res
 }
+// 先通过 const assets = options[type] 拿到  assets, 然后再尝试拿到 assets[id],
+// 这里有个顺序,先直接使用id 拿, 如果不存在,则把 id 变成驼峰的形式再拿,如果仍然不存在驼峰的基础上
+// 把首字母再变成大写的形式再拿,如果仍然拿不到则报错,这样说明了我们在使用 Vue.component(id,definition)
+// 全局注册组件的时候,id 可以是连字符,驼峰 或 首字母大写的形式.
+
+// 回到我们的调用 resolveAsset(context.$options,'components',tag),即为 vm.$options.components[tag],
+// 这样我们就可以在 resolveAsset 的时候拿到这个组件的构造函数,并作为 createComponent 的钩子的参数.
+
+
+//2. 局部注册
