@@ -30,3 +30,17 @@ export function initUse(Vue:GlobalAPI){
  * Vue-Router 的入口文件是 src/index.js, 其中定义了 VueRouter 类,也实现了
  * install 的静态方法: VueRouter.install = install, 它定义在 src/install.js中:
  */
+export let _Vue
+exprot function install(Vue){
+    if(install.installed && _Vue === Vue) return
+    install.installed = true
+
+    _Vue = Vue
+
+    const isDef = v => v !== undefined
+
+    const registerInstance = (vm,callVal) => {
+        let i = vm.$options._parentVnode
+        if(isDef(i) && isDef( i = i.data) && isDef( i = i.registerRouteInstance))
+    }
+}
