@@ -14,7 +14,13 @@
 
         //2.数字字符串 --> 转换为数字数组
         const strArrays =  "0123456789"
-        const 
+        // console.table(Array.from(strArrays))
+        let temps = Array.from(strArrays)
+        const str = temps.reduce((a,b) => {
+             console.log({a:a,b:b})
+             return a + b
+        },'')
+        console.log(str)
     </script>
 </body>
 </html>
