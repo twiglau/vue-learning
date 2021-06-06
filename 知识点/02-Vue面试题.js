@@ -144,3 +144,290 @@
  * 来实现. 当页面使用对应属性时,每个属性都拥有自己的dep属性,存放他所依赖的watcher(依赖收集),当属性变化后会通过自己对象的watcher去
  * 更新(派发更新).
  */
+
+//相关代码如下.
+class Observer {
+    //观测值
+    constructor(value){
+        this.walk(value);
+    }
+    walk(data){
+        //对象上的所有属性依次进行观测
+        let keys = Object.keys(data);
+        for(let i = 0; i < keys.length; i++){
+            let key = keys[i];
+            let value = data[key];
+            defineReactive(data,key,value);
+        }
+    }
+}
+//Object.defineProperty数据劫持核心,兼容性在ie9以及以上
+function defineReactive(data,key,value){
+    observe(value);//递归关键
+    // ---如果value还是一个对象会继续走一遍defineReactive层层遍历一直到value不是对象才停止
+    //思考? 如果Vue数据嵌套层级过深 >>性能会受影响
+    Object.defineProperty(data,key,{
+        get(){
+            console.log("获取值");
+            //需要做依赖收集过程,这里代码没写出来
+            return value;
+        },
+        set(newValue){
+            if(newValue === value) return;
+            console.log("设置值");
+            //需要做派发更新过程,这里代码没写出来
+            value = newValue;
+        },
+    });
+}
+export function observe(value){
+    //如果传过来的是对象或者数组 进行属性劫持
+    if(
+        Object.prototype.toString.call(value) === "[object Object]" ||
+        Array.isArray(value)
+    ){
+        return new Observer(value);
+    }
+}
+
+/**
+ * 11 Vue如何检测数组变化
+ * 
+ * 数组考虑性能原因没有用 defineProperty 对数组的每一项进行拦截,而是选择对7种数组
+ * (push,shift,pop,splice,unshift,sort,reverse) 方法进行重写 (AOP切片思想)
+ * 
+ * 所以在Vue中修改数组的索引和长度是无法监控到的.需要通过以上7种变异方法修改数组才会
+ * 触发数组对应的watcher进行更新
+ * 
+ * 相关代码如下
+ */
+
+//src/obserber/array.js
+//先保留数组原型
+const arrayProto = Array.prototype;
+//然后将arrayMethods继承自数组原型
+//这里是面向切片编程思想(AOP) ---不破坏
+export const arrayMethods = Object.create(arrayProto);
+let methodsToPatch = [
+    "push",
+    "pop",
+    "shift",
+    "unshift",
+    "splice",
+    "reverse",
+    "sort",
+];
+methodsToPatch.forEach((method) => {
+    arrayMethods[method] = function (...args){
+        //这里保留原型方法的执行结果
+        const result = arrayProto[method].apply(this,args);
+        //这句话是关键
+        //this代表的就是数据本身,比如数据是{a:[1,2,3]} 那么我们使用a.push(4)
+        //this就是a,  ob就是 a.__ob__ 这个属性就是上段代码增加的, 代表的是该数据已经被响应式
+        //观察过了指向Observer实例
+        const ob = this.__ob__;
+
+        //这里的标志就是代表数组有新增操作
+        let inserted;
+        switch(method){
+            case "push":
+            case "unshift":
+                inserted = args;
+                break;
+            case "splice":
+                inserted = args.slice(2);
+            default:
+                break;
+        }
+        //如果有新增的元素 inserted是一个数组 调用Observer实例的observeArray对数组每一项进行观测
+        if(inserted) ob.observeArray(inserted);
+        //之后咱们还可以在这里检测到数组改变了之后从而触发视图更新的操作
+        return result;
+    }
+})
+
+/**
+ * 12 Vue3.0用过吗? 了解多少?
+ * 
+ * 12.1 响应式原理的改变Vue3.x使用Proxy取代Vue2.x版本的Object.defineProperty
+ * 12.2 组件选项声明方式Vue3.x使用Composition API setup 是 Vue3.x新增的一个选项,他是组件使用
+ *      Composition API的入口.
+ * 12.3 模板语法变化slot具名插槽语法 自定义指令v-model升级
+ * 12.4 其他方面的更改 Suspense 支持 Fragment (多个根节点) 和 Protal (在 dom 其他部分渲染组件内容)组件,
+ *      针对一些特殊的场景做了处理. 基于treeshaking优化, 提供了更多的内置功能.
+ */
+
+/**
+ * 13 Vue3.0和2.0的响应式原理区别
+ * 
+ * Vue3.x改用Proxy替代Object.defineProperty,因为 Proxy 可以直接监听对象和数组的变化,并且有多大13种拦截方法.
+ */
+//相关代码如下
+import { mutableHandlers} from './baseHandlers'; //代理相关逻辑
+import { isObject } from './util'; //工具方法
+export function reactive(target){
+    //根据不同参数创建不同响应式的对象
+    return createReactiveObject(target,mutableHandlers);
+}
+function createReactiveObject(target,baseHandlers){
+    if(!isObject(target)){
+        return target;
+    }
+    const observed = new Proxy(target,baseHandler);
+    return observed;
+}
+function createGetter(){
+    return function get(target,key,receiver){
+        //对获取的值进行映射
+        const res = Reflect.get(target,key,receiver);
+        console.log("属性获取",key);
+        if(isObject(res)){
+            //如果获取的值是对象类型,则返回当前对象的代理对象
+            return reactive(res);
+        }
+        return res;
+    };
+}
+function createSetter(){
+    return function set(target,key,value,receiver){
+        const oldValue = target[key];
+        const hadKey = hasOwn(target,key);
+        const result = Reflect.set(target,key,value,receiver);
+        if(!hadKey){
+            console.log("属性新增",key,value);
+        }else if(hasChanged(value,oldValue)){
+            console.log("属性值被修改",key,value);
+        }
+        return result;
+    };
+}
+export const mutableHandlers = {
+    get, //当获取属性时调用此方法
+    set, //当修改属性时调用此方法
+}
+
+/**
+ * 14. Vue的父子组件生命周期钩子函数执行顺序
+ * 14.1 加载渲染过程
+ * 父 beforeCreate ->父created ->父beforeMount ->子beforeCreate
+ * ->子beforeMount ->子mounted ->父mounted
+ * 
+ * 14.2 子组件更新过程
+ * 父beforeUpdate ->子beforeUpdate ->子updated ->父updated
+ * 
+ * 14.3 父组件更新过程
+ * 父beforeUpdate ->父updated
+ * 
+ * 14.4 销毁过程
+ * 父beforeDestroy ->子beforeDestroy ->子destroyed ->父destroyed
+ */
+
+/**
+ * 15 虚拟DOM是什么? 有什么优缺点?
+ * 由于在浏览器中操作DOM是昂贵的.频繁的操作DOM,会产生一定的性能问题.这就是虚拟Dom的产生原因.
+ * Vue2的Virtual DOM借鉴了开源库snabbdom的实现. Virtual DOM本质就是用一个原生的JS对象去
+ * 描述一个DOM节点,是对真实DOM的议程抽象.
+ * 
+ * 优点:
+ * 1,保证性能下限: 框架的虚拟DOM需要适配任何上层APi可能产生的操作,它的一些DOM操作的实现必须是
+ * 普适的,所以它的性能并不是最优的; 但是比起粗暴的DOM操作性能要好很多,因此框架的虚拟DOM至少可以
+ * 保证在你不需要手动优化的情况下,依然可以提供还不错的性能,即保证性能的下限;
+ * 2.无需手动操作DOM: 我们不再需要手动去操作DOM;只需要写好 View-Model 的代码逻辑,框架会根据虚拟DOM
+ * 和数据双向绑定,帮我们以可预期的方式更新视图,极大提高我们的开发效率;
+ * 3.跨平台:虚拟DOM本质上是 JavaScropt对象,而DOM与平台强相关,相比之下虚拟DOM可以进行更方便地跨平台
+ * 操作,例如服务器渲染, weex开发等等.
+ * 
+ * 缺点:
+ * 1.无法进行极致优化:虽然虚拟DOM+合理的优化,足以应对绝大部分应用的性能需求,但在一些性能要求极高的应用
+ * 中虚拟DOM无法进行针对性的极致优化.
+ * 2.首次渲染大量DOM时,由于多了一层虚拟DOM的计算,会比innerHTML插入慢.
+ * 
+ */
+
+/**
+ * 16 v-model原理
+ * 
+ * v-model是一个语法糖
+ * v-model在内部为不同的输入元素使用不同的property并抛出不同的事件.
+ * 
+ * 16.1 text和textarea元素使用value property 和 input事件;
+ * 16.2 checkbox 和 radio 使用checked property 和 change事件;
+ * 16.3 select字段将value作为prop并将change作为事件.
+ * 
+ * 注意:对于需要使用输入法(如中文,日,韩文等)的语言,会发现v-model不会在输入法组合文字过程中得到更新.
+ */
+//在普通标签上
+`
+<input v-model="sth"/>
+<input v-bind:value="sth" v-on:input="sth = $event.target.value"></input>
+
+`
+
+//在组件上
+`
+<currency-input v-model="pirce"></currency-input>
+<currency-input :value="price" @input="price = arguments[0]"></currency-input>
+`
+//子组件定义
+Vue.component('currency-input',{
+    template:`
+    <span>
+    <input
+     ref = 'input'
+     :value = "value"
+     @input = "$emit('input',$event.target.value)"
+    </span>
+    `,
+    props:['value'],
+})
+
+/**
+ * 17 v-for为什么要加key?
+ * 如果不使用Key, Vue会使用一种最大限度减少动态元素并且尽可能的尝试就地 修改/复用 相同类型元素的算法.
+ * key 是为Vue中 vnode 的唯一标记, 通过这个key, 我们的diff操作可以更准确,更快速
+ * 
+ * 更准确: 因为带key就不是就地复用了,在sameNode 函数 a.key === b.key 对比中可以避免就地复用的情况,
+ *        所以会更加准确.
+ * 
+ * 更快速: 利用key的唯一性生成map对象来获取对应节点,比遍历方式更快.
+ */
+
+//相关代码如下
+
+//判断两个vnode的标签和key是否相同,如果相同,就可以认为是同一节点就地复用
+function isSameVnode(oldVnode,newVnode){
+    return oldVnode.tag === newVnode.tag && oldVnode.key === newVnode.key;
+}
+
+//根据key来创建老的儿子的index映射表,类似 {'a':0,'b':1} 代表为 'a'的节点
+//在第一个位置 key 为 'b' 的节点在第二个位置
+function makeIndexByKey(children){
+    let map = {};
+    children.forEach((item,index) => {
+        map[item.key] = index;
+    });
+    return map;
+}
+//生成的映射表
+let map = makeIndexByKey(oldCh);
+
+/**
+ * 18 Vue时间绑定原理
+ * 原生事件绑定是通过 addEventListener绑定给真实元素的, 组件事件绑定是通过Vue自定义的 $on
+ * 实现的, 如果要在组件上使用原生事件,需要加上.native修饰符,这样就相当于在父组件中把子组件当做
+ * 普通html标签,然后加上原生事件.
+ * 
+ * $on,$emit是基于发布订阅模式的,维护一个事件中心, on的时候将事件按名称存在事件中心里,称之为
+ * 订阅者,然后emit将对应的时间进行发布,去执行事件中心里的对应的监听器.
+ */
+
+/**
+ * 19 vue-router路由钩子函数是什么? 执行顺序是?
+ * 路由钩子的执行流程,钩子函数种类有: 全局守卫,路由守卫,组件守卫
+ * 
+ * 完整的导航解析流程:
+ * 19.1 导航被触发
+ * 19.2 在失活的组件里调用 beforeRouteLeave守卫
+ * 19.3 调用全局的beforeEach守卫
+ * 19.4 在重用的组件里调用 beforeRouteUpdate守卫(2.2+版本).
+ */
