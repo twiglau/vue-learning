@@ -430,4 +430,102 @@ let map = makeIndexByKey(oldCh);
  * 19.2 在失活的组件里调用 beforeRouteLeave守卫
  * 19.3 调用全局的beforeEach守卫
  * 19.4 在重用的组件里调用 beforeRouteUpdate守卫(2.2+版本).
+ * 19.5 在路由配置里调用 beforeRouteEnter.
+ * 19.6 解析异步路由组件
+ * 19.7 在被激活的组件里调用 beforeRouteEnter.
+ * 19.8 调用全局的 beforeResolve 守卫(2.5+)
+ * 19.9 导航被确认
+ * 19.10调用全局的afterEach钩子
+ * 19.11触发DOM更新
+ * 19.12调用beforeRouteEnter守卫中传给next的回调函数,创建好的组件实例会作为回调函数的参数
+ * 传入.
+ */
+
+/**
+ * 20 vue-router动态路由是什么? 有什么问题?
+ * 
+ * 我们经常需要把某种模式匹配到的所有路由,全部映射到同个组件. 例如,我们有一个User组件,对于所有ID
+ * 个不相同的用户,都要使用这个组件来渲染. 那么,我们可以在 vue-router 的路由路径中使用"动态路径参数"
+ * (dynamic segment)来达到这个效果:
+ */
+const User = {
+    template: "<div>User</div>",
+};
+const router = new VueRouter({
+    routes: [
+        //动态路径参数 以冒号开头
+        {path: "user/:id",component:User},
+    ],
+});
+//问题: vue-router 组件复用导致路由参数失效怎么办?
+//解决方法:
+//1.通过 watch监听路由参数再发请求
+watch:{ //通过watch来监听路由变化
+    "$route":function(){
+        this.getData(this.$route.params.xxx);
+    }
+}
+//2.用 :key来阻止 "复用"
+<router-view :key="$route.fullPath" />
+
+
+/**
+ * 21 谈下对vuex的个人理解?
+ * vuex是专门为vue提供的全局状态管理系统,用于多个组件中数据共享,数据缓存等.
+ * (无法持久化,内部核心原理是通过创造一个全局实例 new Vue)
+ * 如图: 02-21-1
+ * 主要包括以下几个模块:
+ * 21.1 State: 定义了应用状态的数据结构,可以在这里设置默认的初始状态.
+ * 21.2 Getter: 允许组件从Store中获取数据, mapGetters辅助函数仅仅是将 store 中的getter映射到局部计算属性.
+ * 21.3 Mutation: 是唯一更改 store 中状态的方法,且必须是同步函数.
+ * 21.4 Action: 用于提交mutation, 而不是直接变更状态,可以包含任意异步操作.
+ * 21.5 Module: 允许将单一的 Store 拆分为多个 store 且同时保存在单一的状态树中.
+ */
+
+/**
+ * 22 Vuex页面刷新数据丢失怎么解决?
+ * 
+ * 需要做vuex数据持久化, 一般使用本地存储的方案来保存数据, 可以自己设计存储方案,也可以使用
+ * 第三方插件
+ * 
+ * 推荐使用 vuex-persist 插件,它就是为 vuex 持久化存储而生的一个插件, 不需要你手动存取 storage,
+ * 而是直接将状态保存至 cookie 或者 localStorage 中
+ */
+
+/**
+ * 23 Vuex为什么要分模块并且加命名空间?
+ * 模块: 由于使用单一状态树,应用的所有状态会集中到一个比较大的对象. 当应用变得非常复杂时,store
+ * 对象就有可能变得相当臃肿. 为了解决以上问题, Vuex 允许我们将 store 分割成模块 (module). 每个模块
+ * 拥有自己的 state, mutation, action, getter, 甚至是嵌套子模块.
+ * 
+ * 命名空间: 默认情况下, 模块内部的 action, mutation 和 getter 是注册在全局命名空间的 ---这样使得多个
+ * 模块能够对同一 mutation 或 action 作出响应. 如果希望你的模块具有更高的封装度和复用性,你可以通过添加
+ * namespaced:true 的方式使其成为带命名空间的模块. 当模块被注册后,它的所有 getter,action 及 mutation
+ * 都会自动根据模块注册的路径调整命名.
+ */
+
+
+/**
+ * 24 使用过 Vue SSR吗? 说说SSR
+ * SSR也就是服务端渲染,也就是将Vue在客户端把标签渲染成 HTML的工作放在服务端完成, 然后再把
+ * html 直接返回给客户端.
+ * 
+ * 缺点: 开发条件会受到限制,服务器端渲染只支持 beforeCreate 和 created 两个钩子,当我们需要一些
+ * 外部扩展库时需要特殊处理,服务端渲染应用程序也需要处于Node.js 的运行环境.
+ * 
+ * 服务器会有更大的负载需求.
+ */
+
+/**
+ * 25 vue中使用了那些设计模式?
+ * 
+ * 25.1工厂模式 - 传入参数即可创建实例
+ * 虚拟DOM根据参数的不同返回基础标签的Vnode 和组件Vnode
+ * 25.2单例模式 - 整个程序有且仅有一个实例
+ * vuex 和 vue-router 的插件注册方法 install 判断如果系统存在实例就直接返回掉
+ * 25.3发布-订阅模式(vue事件机制)
+ * 25.4观察者模式(响应式数据原理)
+ * 25.5装饰模式:(@装饰器的用法)
+ * 25.6策略模式 策略模式指对象有某个行为,但是在不同的场景中,该行为有不同的实现方案
+ * -----比如选项的合并策略
  */
