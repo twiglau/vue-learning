@@ -36,14 +36,14 @@
                 return {m:1}
             },
             beforeCreate(){ // 这里可以描述 父子关系 
-                console.log(this.$parent.$children[0] === this);
+                console.log('child beforeCreate',`this.$parent.$children[0] === this?`,this.$parent.$children[0] === this);
             },
         }
         // Vue.component('my',component)
         let vm = new Vue({
             el:'#app',
             beforeCreate(){
-                console.log(this.$children);
+                console.log('parent beforeCreate','this.$children:',this.$children);
                 debugger;
             },
             data:{
@@ -54,7 +54,7 @@
                 my:component
             }
         });
-        // 组件的使用 三部 1）导入一个组件 2） 注册 3) 使用 在当前组件定义的模板中使用
+        // 组件的使用 三步骤:  1）导入一个组件 2） 注册组件  3) 使用 在当前组件定义的模板中使用
     </script>
 </body>
 </html>

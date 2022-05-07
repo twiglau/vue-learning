@@ -17,8 +17,9 @@
         <!-- v-model 局限只能传递一个属性 如果只有一个 可以使用 v-model， 多个依然需要使用.sync -->
 
 
-        <!-- click  input  自定义事件 名字和原生事件相同-->
+        <!-- 3. click  input  自定义事件 名字和原生事件相同-->
         <!-- .native 就是给组件的 最外层元素上绑定事件 -->
+        <!-- @click.native="show" -->
         <Son2 ref="son2" :mny="mny" :count="count" @click="show" @mouseup="show"></Son2>
     </div>
 </template>

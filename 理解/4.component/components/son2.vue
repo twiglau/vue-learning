@@ -16,6 +16,7 @@ import Grandson2 from './grandson2'
 export default {
     
     // 父传递给子元素 -> 儿子 有三个属性用不到 -> 孙子
+    // attr 不显示到标签上
     inheritAttrs:false,
     // props:{
     //     mny:{},
@@ -34,7 +35,9 @@ export default {
             alert(1);
         },
         changeCount(){
+            // 1. :count.sync
             // this.$emit('update:count',100)
+            // 2. v-model
             this.$emit('input',100)
         }
     }

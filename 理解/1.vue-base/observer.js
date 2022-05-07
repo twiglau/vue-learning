@@ -7,7 +7,7 @@ let arrayProto = Array.prototype; // 数组原型上的方法
 let proto = Object.create(arrayProto);
 ['push','unshift','splice','reverse','sort','shift','pop'].forEach(method=>{
     proto[method] = function (...args) { // 这个数组应该也被监控
-        // Array.prototype.push.call([1,2,3],4,5,6);
+        
         let inserted; // 默认没有插入新的数据
         switch (method) {
             case 'push':
@@ -21,6 +21,7 @@ let proto = Object.create(arrayProto);
         }
         console.log('视图更新');
         ArrayObserver(inserted)
+        // Array.prototype.push.call([1,2,3],4,5,6);
         arrayProto[method].call(this, ...args)
     }
 });
@@ -32,11 +33,13 @@ function ArrayObserver(obj) {
     }
 }
 function observer(obj) {
+    // 如果是常量,就不监控了
     if (typeof obj !== 'object' || obj == null) {
         return obj;
     }
     if (Array.isArray(obj)) {
         //  上面处理的是数组格式 push shift splice (如果调用这三个方法)应该把这个值判断一下是否是对象
+        //  obj.__proto__= proto;
         Object.setPrototypeOf(obj,proto); // 实现一个对数组的方法进行重写
         ArrayObserver(obj)
     } else {
@@ -76,4 +79,4 @@ data.d = [1,2,3]
 // 2。默认会递归所有数据, 增加 getter和setter
 // 3.数组里套对象 对象是支持响应式变化的，如果是常量则没有效果
 // 4.修改数组索引和长度 是不会导致视图更新的
-// 5.如果新增的数据 vue中也会帮你监控（对象类型）
+// 5.如果新增的数据 vue中也会帮你监控（数据需要是 对象类型）

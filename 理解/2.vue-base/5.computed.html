@@ -10,14 +10,14 @@
 
 <body>
     <div id="app">
-        {{getFullname}} {{b}}
+        {{getFullname}} {{b}} {{getMethodName()}}
         全选 、 非全选
         <input type="checkbox" v-model="checkAll">
         <input type="checkbox" v-for="(check,index) in checks" v-model="check.value">
     </div>
     <script src="node_modules/vue/dist/vue.min.js"></script>
     <script>
-        // method 是没有缓存
+        // method 是没有缓存, 如果 b 更新, getFullname 会重新调用
         let vm = new Vue({
             el: '#app',
             data: {
@@ -41,7 +41,13 @@
                     console.log(1)
                     return this.firstname+this.lastname
                 }
-            }
+            },
+            methods: {
+                getMethodName(){
+                    console.log(2)
+                    return 'method'
+                }
+            },
 
         });
     </script>

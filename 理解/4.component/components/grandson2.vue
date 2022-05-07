@@ -1,7 +1,7 @@
 <template>
     <div>grandson2
         {{$attrs}}
-        <button @click="$listeners.click" @mouseup="$listeners.mouseup">点我 </button>
+        <button @click="$listeners.click" @mouseup="$listeners.mouseup"> 点我 </button>
     </div>
 </template>
 
