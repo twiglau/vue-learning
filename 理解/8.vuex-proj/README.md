@@ -1,4 +1,4 @@
-# vuex-project
+# 8.vuex-proj
 
 ## Project setup
 ```
