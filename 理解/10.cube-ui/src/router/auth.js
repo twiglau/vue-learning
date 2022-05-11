@@ -4,7 +4,7 @@ export default [
     name: 'contact',
     component: {
       render(h) {
-        return <h1 > 联系我 < /h1>
+        return <h1> 联系我 </h1>
       }
     }
   }, {
@@ -12,7 +12,7 @@ export default [
     name: 'service',
     component: {
       render(h) {
-        return <h1 > 服务 < /h1>
+        return <h1> 服务 </h1>
       }
     }
   },

@@ -1,0 +1,47 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="app">
+        <input type="text" v-model="school.name">
+        <div>{{school.name}}</div>
+        <div>{{school.age}}</div>
+        <!-- 如果数据不变化, 视图就不会刷新 -->
+        <div>{{getNewName}}</div>
+        <button v-on:click="changeName">更新</button>
+        <div v-html="message"></div>
+        <!-- 我在内部 会匹配 {{}} -->
+        <ul>
+            <li>1</li>
+            <li>2</li>
+        </ul>
+    </div>
+    <script src="./MVVM.js"></script>
+    <script>
+        let vm = new Vue({
+            el:'#app',
+            data:{
+                school: {
+                    name: 'lau',
+                    age: 20
+                },
+                message:'<h1>message Html</h1>'
+            },
+            computed:{
+                getNewName(){
+                    return this.school.name + 'localer'
+                }
+            },
+            methods: {
+                changeName(){
+                    this.school.name = 'twiglau'
+                }
+            },
+        });
+    </script>
+</body>
+</html>
